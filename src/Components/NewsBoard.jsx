@@ -3,31 +3,47 @@ import NewsItem from "./NewsItem";
 
 const NewsBoard = ({ category }) => {
   const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true); // Yangi loading holati
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true); // API chaqirishdan oldin loadingni yoqish
+    setLoading(true);
+    setError(null);
+
     let url = `https://newsapi.org/v2/top-headlines?country=us&category=${category}&apiKey=${
       import.meta.env.VITE_API_KEY
     }`;
 
     fetch(url)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch news");
+        }
+        return response.json();
+      })
       .then((data) => {
         setArticles(data.articles);
-        setLoading(false); // API chaqirilgandan so‘ng loadingni o‘chirish
+        setLoading(false);
       })
-      .catch(() => setLoading(false)); // Xatolik yuz bersa ham loading o‘chishi kerak
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, [category]);
 
   return (
     <div className="container">
-      {loading ? ( 
+      {loading && (
         <div className="text-center py-5">
-          <span className="spinner-border text-primary"></span> {/* Bootstrap loading */}
+          <span className="spinner-border text-primary"></span>
           <p>Loading news...</p>
         </div>
-      ) : (
+      )}
+
+      {error && <p className="text-danger text-center">{error}</p>}
+
+      {!loading &&
+        !error &&
         articles.map((news, index) => (
           <NewsItem
             key={index}
@@ -38,8 +54,7 @@ const NewsBoard = ({ category }) => {
             url={news.url}
             publishedAt={news.publishedAt}
           />
-        ))
-      )}
+        ))}
     </div>
   );
 };
